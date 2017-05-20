@@ -4,9 +4,12 @@ import org.mozilla.intl.chardet.HtmlCharsetDetector;
 import org.mozilla.intl.chardet.nsDetector;
 import org.mozilla.intl.chardet.nsICharsetDetectionObserver;
 import org.mozilla.intl.chardet.nsPSMDetector;
+import sun.security.pkcs.ParsingException;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,6 +19,25 @@ import java.util.regex.Pattern;
  */
 public class Main {
 
+
+    private static  List<String> encodings ;
+
+    static {
+        encodings = new ArrayList<>();
+        encodings.add("gbk");
+        encodings.add("gb2312");
+        encodings.add("big5");
+        encodings.add("utf-16");
+        encodings.add("utf-32");
+        encodings.add("gb18030");
+        encodings.add("koi8-r");
+        encodings.add("koi8-u");
+        encodings.add("viscii");
+        encodings.add("euc-kr");
+        encodings.add("euc-tw");
+        encodings.add("euc-jp");
+        encodings.add("euc-cn");
+    }
     public static void printHelp(){
         System.out.println("Usage: ./Iconv [OPTIONS] \n\t" +
                 "-h print this help and exit.\n\t" +
@@ -32,9 +54,6 @@ public class Main {
     public static void main(String[]args) throws Exception {
 
 
-
-
-
         String fromEncode =null;
         String toEncode = "utf-8";
         String fromDir = ".";
@@ -43,6 +62,7 @@ public class Main {
         boolean view = false;
         boolean isCopy = false;
         boolean noConvert = false;
+        boolean tryEncode = false;
 
 
 
@@ -56,6 +76,7 @@ public class Main {
                 if (args[i].equals("-v")) view = true;
                 if (args[i].equals("-c")) isCopy = true;
                 if (args[i].equals("-n")) noConvert = true;
+                if (args[i].equals("-try")) tryEncode = true;
 
                 if (args[i].equals("-f") && i + 1 <= length) fromEncode = args[i + 1];
                 if (args[i].equals("-t") && i + 1 <= length) toEncode = args[i + 1];
@@ -84,17 +105,17 @@ public class Main {
         }
 
 
-        if(fromEncode==null) printHelp();
+//        if(fromEncode==null) printHelp();
         if(toEncode==null) printHelp();
         if(fromDir==null) printHelp();
         if(toDir==null) printHelp();
 
 
-        doIt(fromDirFile,fromEncode,toEncode,regex,new File(toDir),view,isCopy);
+        doIt(fromDirFile,fromEncode,toEncode,regex,new File(toDir),view,isCopy,tryEncode,encodings);
     }
 
     public static void doIt(File fromDir,String fromEncode,String toEncode,String regex,File toDir,boolean view,boolean isCopy
-                            ) throws Exception {
+                            ,boolean tryEncode,List <String> sEncodings) throws Exception {
 
         new Recursive()
                 .setRoot(fromDir)
@@ -114,25 +135,42 @@ public class Main {
                             if(m.find())  found = true;
                         }else {
                             ////////////////////check file type////////////////////
-                            String fileEncoded = checkFileType(file);
+                            String fileEncoded = checkCharset(file);
                             ////////////////////////////////////////////////////////////////////////
 
-                            if (fileEncoded != null&&fileEncoded.equals(fromEncode)) {
+
+                            if (fileEncoded != null && fromEncode!=null ) {
+                                if(fileEncoded.equals(fromEncode)) {
+                                    fromEncode_inner = fromEncode;
+                                    found = true;
+                                }
+                            } else if(fileEncoded!=null && fromEncode == null) {
+                                for(String e:sEncodings){
+                                    if(fileEncoded.equals(e)){
+                                        found = true;
+                                        fromEncode_inner = e;
+                                        break;
+                                    }
+                                }
+                            }else if(fileEncoded==null && fromEncode !=null){
                                 found = true;
-                            } else {
+                                fromEncode_inner = fromEncode;
+                            }else if(fileEncoded ==null && fromEncode == null)
+                            {
                                 found = false;
                             }
                         }
 
                         if(found){
+//                            if(fromEncode_inner==null) fromEncode_inner = fromEncode;
                             new Transform()
                                     .setInputStream(new FileInputStream(file))
                                     .setOutputStream(new FileOutputStream(newName))
-                                    .setAction(new Convert().setFromEncode(fromEncode).setToEncode(toEncode))
+                                    .setAction(new Convert().setFromEncode(fromEncode_inner).setToEncode(toEncode))
                                     .transform();
 
                             if(view) {
-                                System.out.println("Convert file "+file +" from code "+fromEncode+" to code "+toEncode+" to file "+newName);
+                                System.out.println("Convert file "+file +" from code "+fromEncode_inner+" to code "+toEncode+" to file "+newName);
                             }
 
 
@@ -153,12 +191,36 @@ public class Main {
 
     }
 
-    private static String checkFileType(File file) throws IOException {
-        byte[] buf = new byte[1024] ;
-        int len;
-        boolean done = false ;
-        boolean isAscii = true ;
 
+    private static String getFileSuffix(File file){
+        String ax = null;
+        String []x = file.getName().split(".");
+        if(x.length>=2) {
+            ax = x[x.length - 1];
+        }
+        return ax;
+
+    }
+
+    private static boolean inList(List<String>list ,File file){
+        String ax = getFileSuffix(file);
+        if(ax!=null) {
+            for(String s:list){
+                if(s.equals(ax)){
+                    return true;
+                }
+            }
+            return false;
+        }
+        else {
+            return false;
+        }
+
+    }
+
+    public static String checkCharset(File file) throws IOException {
+        String charsetRes[] = new String[1];
+        // Initalize the nsDetector() ;
         nsDetector det = new nsDetector(nsPSMDetector.ALL) ;
 
         // Set an observer...
@@ -167,36 +229,36 @@ public class Main {
         det.Init(new nsICharsetDetectionObserver() {
             public void Notify(String charset) {
                 HtmlCharsetDetector.found = true ;
-//                                System.out.println("CHARSET = " + charset);
+//                System.out.println("CHARSET = " + charset);
+                charsetRes[0] = charset.toLowerCase();
             }
         });
 
+        try(BufferedInputStream imp = new BufferedInputStream(new FileInputStream(file))) {
 
-        BufferedInputStream imp  =null;
-        try {
-            imp = new BufferedInputStream(new FileInputStream(file));
-            String[] pe = null;
-            if ((len = imp.read(buf, 0, buf.length)) != -1) {
+            byte[] buf = new byte[1024];
+            int len;
+            boolean done = false;
+            boolean isAscii = true;
+
+            while ((len = imp.read(buf, 0, buf.length)) != -1 && !done) {
 
                 // Check if the stream is only ascii.
                 if (isAscii)
                     isAscii = det.isAscii(buf, len);
+
                 // DoIt if non-ascii and not done yet.
                 if (!isAscii && !done)
                     done = det.DoIt(buf, len, false);
-                pe = det.getProbableCharsets();
-                if (!isAscii) Arrays.sort(pe);
-//            if(!isAscii) System.out.println(Arrays.toString(pe) +"\t"+ file);
             }
             det.DataEnd();
 
-            if (!isAscii) {
-                return pe[0].toLowerCase();
-            } else {
-                return null;
+            if (isAscii) {
+                charsetRes[0] = "ASCII".toLowerCase();
             }
-        }finally {
-            imp.close();
         }
+
+        return charsetRes[0];
+
     }
 }

@@ -28,6 +28,11 @@ If you want to match specific files,add `-r <regex>` with regex argv.
 ./iconv-super -f big5 -t utf-8 -s math -d math-converted -r .html
 ```
 Convert .html files.
+If you do not know which encoding the source files are,remove`-f`,it will anto-detect,
+
+```bash
+./iconv-super -t utf-8 -s math -d math-converted
+```
 
 ## Help
 
