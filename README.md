@@ -4,7 +4,7 @@ Convert encoding of given files from one encoding to another.
 
 ## Example
 
-Convert files in directory from a given encoding to another.
+Convert one file or files in directory from a given encoding to another.
 
 ```bash
 ./iconv-super -f big5 -t utf-8 -s math -d math-converted
@@ -33,6 +33,17 @@ If you do not know which encoding the source files are,remove`-f`,it will anto-d
 ```bash
 ./iconv-super -t utf-8 -s math -d math-converted
 ```
+
+Do with pipe : 
+```bash
+cat file |./iconv-super -f big5 -t utf-8 
+```
+Anto-detect with pipe:
+
+```bash
+cat file |./iconv-super  -t utf-8 
+```
+
 
 ## Help
 

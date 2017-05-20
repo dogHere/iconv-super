@@ -12,7 +12,8 @@ public class Recursive {
     private Things things;
 
     public void recursive()throws Exception{
-        recursive(root);
+        if(root.isDirectory()) recursive(root);
+        else things.doThing(root);
     }
 
     private void recursive(File file) throws Exception {

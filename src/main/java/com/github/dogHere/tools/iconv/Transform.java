@@ -15,6 +15,8 @@ public class Transform {
     private Action action ;
 
     public void transform() throws IOException {
+        if(this.outputStream==null) this.outputStream = new BufferedOutputStream(System.out);
+        action.setOutputStream(this.outputStream);
         try {
                 byte[] buffer = new byte[this.bufferSize];
                 int size = 0;
@@ -63,7 +65,6 @@ public class Transform {
 
     public Transform setAction(Action action) {
         this.action=action;
-        action.setOutputStream(this.outputStream);
         return this;
     }
 }

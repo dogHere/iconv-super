@@ -32,6 +32,7 @@ public class Convert implements Action {
     }
 
     public Convert setFromEncode(String fromEncode) {
+        if(fromEncode==null) fromEncode="utf-8";
         this.fromEncode = fromEncode;
         return this;
     }
@@ -41,6 +42,7 @@ public class Convert implements Action {
     }
 
     public Convert setToEncode(String toEncode) {
+        if(toEncode==null) toEncode="utf-8";
         this.toEncode = toEncode;
         return this;
     }
