@@ -76,7 +76,7 @@ public class Main {
                 if (args[i].equals("-v")) view = true;
                 if (args[i].equals("-c")) isCopy = true;
                 if (args[i].equals("-n")) noConvert = true;
-                if (args[i].equals("-try")) tryEncode = true;
+
 
                 if (args[i].equals("-f") && i + 1 <= length) fromEncode = args[i + 1];
                 if (args[i].equals("-t") && i + 1 <= length) toEncode = args[i + 1];
@@ -111,11 +111,11 @@ public class Main {
         if(toDir==null) printHelp();
 
 
-        doIt(fromDirFile,fromEncode,toEncode,regex,new File(toDir),view,isCopy,tryEncode,encodings);
+        doIt(fromDirFile,fromEncode,toEncode,regex,new File(toDir),view,isCopy,encodings);
     }
 
     public static void doIt(File fromDir,String fromEncode,String toEncode,String regex,File toDir,boolean view,boolean isCopy
-                            ,boolean tryEncode,List <String> sEncodings) throws Exception {
+                            ,List <String> sEncodings) throws Exception {
 
         new Recursive()
                 .setRoot(fromDir)
